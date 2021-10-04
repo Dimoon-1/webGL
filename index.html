@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>Lab 01</title>
+        <title>WebGL</title>
 
         <script id="vertex-shader" type="x-shader/x-vertex">
             attribute vec4 vPosition;
@@ -11,8 +11,52 @@
             uniform mat4 mView;
             uniform mat4 mProj;
 
+            uniform vec3 theta; //for rotation
+            uniform vec3 newPos; //for translation
+            uniform vec3 scale; //for scaling
+
             void main() {
-                gl_Position = mProj * mView * vPosition;
+                vec3 angles = radians(theta);
+                vec3 c = cos(angles);
+                vec3 s = sin(angles);
+
+                mat4 rx = mat4(
+                    1.0,  0.0,  0.0, 0.0,
+                    0.0,  c.x,  s.x, 0.0,
+                    0.0, -s.x,  c.x, 0.0,
+                    0.0,  0.0,  0.0, 1.0
+                );
+
+                mat4 ry = mat4( 
+                    c.y, 0.0, -s.y, 0.0,
+                    0.0, 1.0,  0.0, 0.0,
+                    s.y, 0.0,  c.y, 0.0,
+                    0.0, 0.0,  0.0, 1.0 
+                );
+
+                mat4 rz = mat4( 
+                    c.z, s.z, 0.0, 0.0,
+                    -s.z,  c.z, 0.0, 0.0,
+                    0.0,  0.0, 1.0, 0.0,
+                    0.0,  0.0, 0.0, 1.0
+                );
+
+                mat4 tr = mat4( 
+                    1.0, 0.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0, 0.0,
+                    0.0, 0.0, 1.0, 0.0,
+                    newPos.x, newPos.y, newPos.z, 1.0 
+                );
+                
+                mat4 scale = mat4( 
+                    scale.x, 0.0, 0.0, 0.0,
+                    0.0, scale.y, 0.0, 0.0,
+                    0.0, 0.0, scale.z, 0.0,
+                    0.0, 0.0, 0.0, 1.0 
+                );
+
+                gl_Position = mProj * mView * tr * rz * ry * rx * scale * vPosition;
+                //gl_Position.z = -gl_Position.z;
                 fColor = vColor;
             }
         </script>
@@ -36,16 +80,104 @@
         <canvas id="mycanvas" width="512" height="512">
             Your browser doesn't support the HTML5 canvas element!
         </canvas>
+        
+        <div class="UI">
+            <input type="checkbox" id="in" name="cube" checked>
+            <label for="cube">Draw Cube</label>
+            
+            <input type="checkbox" id="in" name="cone" checked>
+            <label for="cube">Draw Cone</label>
+            
+            <input type="checkbox" id="in" name="sphere" checked>
+            <label for="cube">Draw Sphere</label>
+            
+            <br><br>
+            <div style="float: left; margin-right: 30px;">
+            <div>
+                rotateX
+                <input id="rotateX" type="range" min="-180" max="180" step="1" value="0" oninput="this.nextElementSibling.value = this.value">
+                <output>0</output>
+                <br>
 
-        <br>
-        <input type="checkbox" id="in" name="cube" checked>
-        <label for="cube">Draw Cube</label>
-        <br>
-        <input type="checkbox" id="in" name="cone" checked>
-        <label for="cube">Draw Cone</label>
-        <br>
-        <input type="checkbox" id="in" name="sphere" checked>
-        <label for="cube">Draw Sphere</label>
-        <br>
+                rotateY
+                <input id="rotateY" type="range" min="-180" max="180" step="1" value="0" oninput="this.nextElementSibling.value = this.value">
+                <output>0</output>
+                <br>
+
+                rotateZ
+                <input id="rotateZ" type="range" min="-180" max="180" step="1" value="0" oninput="this.nextElementSibling.value = this.value">
+                <output>0</output>
+            </div>
+            <br>
+            <div>
+                moveX
+                <input id="moveX" type="range" min="-5" max="5" step="0.1" value="0" oninput="this.nextElementSibling.value = this.value">
+                <output>0</output>
+                <br>
+
+                moveY
+                <input id="moveY" type="range" min="-5" max="5" step="0.1" value="0" oninput="this.nextElementSibling.value = this.value">
+                <output>0</output>
+                <br>
+
+                moveZ
+                <input id="moveZ" type="range" min="-5" max="5" step="0.1" value="0" oninput="this.nextElementSibling.value = this.value">
+                <output>0</output>
+            </div>
+            <br>
+            <div>
+                scaleX
+                <input id="scaleX" type="range" min="0" max="5" step="0.1" value="1" oninput="this.nextElementSibling.value = this.value">
+                <output>1</output>
+                <br>
+
+                scaleY
+                <input id="scaleY" type="range" min="0" max="5" step="0.1" value="1" oninput="this.nextElementSibling.value = this.value">
+                <output>1</output>
+                <br>
+
+                scaleZ
+                <input id="scaleZ" type="range" min="0" max="5" step="0.1" value="1" oninput="this.nextElementSibling.value = this.value">
+                <output>1</output>
+            </div>
+            </div>
+            
+            <div style="float: left;">
+                radius
+                <input id="radius" type="range" min="0" max="50" step="0.1" value="8.3" oninput="this.nextElementSibling.value = this.value">
+                <output>8.3</output>
+                <br>
+
+                camPhi
+                <input id="camPhi" type="range" min="-180" max="180" step="1" value="-25" oninput="this.nextElementSibling.value = this.value">
+                <output>-25</output>
+                <br>
+
+                camTheta
+                <input id="camTheta" type="range" min="-180" max="180" step="1" value="-30" oninput="this.nextElementSibling.value = this.value">
+                <output>-30</output>
+                <br>
+
+                near
+                <input id="zNear" type="range" min="0.01" max="20" step="0.1" value="0.1" oninput="this.nextElementSibling.value = this.value">
+                <output>0.1</output>
+                <br>
+
+                far
+                <input id="zFar" type="range" min="1" max="100" step="1" value="50" oninput="this.nextElementSibling.value = this.value">
+                <output>50</output>
+                <br>
+
+                FOV
+                <input id="fov" type="range" min="10" max="120" step="1" value="45" oninput="this.nextElementSibling.value = this.value">
+                <output>45</output>
+                <br>
+
+                aspect
+                <input id="aspect" type="range" min="0.5" max="2" step="0.01" value="1" oninput="this.nextElementSibling.value = this.value">
+                <output>1</output>
+            </div>
+        </div>
+        
     </body>
 </html>

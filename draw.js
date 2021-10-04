@@ -9,6 +9,24 @@ var colors = [];
 var shapes = [];
 var checks = [];
 
+var theta = [0, 0, 0];
+var thetaLoc;
+
+var newPos = [0, 0, 0];
+var newPosLoc;
+
+var scale = [0, 0, 0];
+var scaleLoc;
+
+var radius, camPhi, camTheta;
+var far, near, fov, aspect;
+
+var eye;
+var at = vec3(0.0, 0.0, 0.0);
+var up = vec3(0.0, 1.0, 0.0);
+var modelViewMatrixLoc, modelViewMatrix;
+var projectionMatrixLoc, projectionMatrix;
+
 class Drawable {
     constructor(vertices, color, program) {
         this.program = program;
@@ -54,14 +72,11 @@ function main() {
     program = initShaders(gl, "vertex-shader", "fragment-shader");
     gl.useProgram(program);
 
-    var modelViewMatrixLoc = gl.getUniformLocation(program, 'mView');
-    var projectionMatrixLoc = gl.getUniformLocation(program, 'mProj');
-    var modelViewMatrix = lookAt([-4, 2, 7], [0, 0, 0], [0, 1, 0]); //-4, 2, 7
-    var projectionMatrix = perspective(45, canvas.width / canvas.height, 0.1, 1000.0);
-    //var projectionMatrix = ortho(-3.0, 3.0, -3.0, 3.0, -10, 10);
-
-    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
-    gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix));
+    modelViewMatrixLoc = gl.getUniformLocation(program, 'mView');
+    projectionMatrixLoc = gl.getUniformLocation(program, 'mProj');
+    thetaLoc = gl.getUniformLocation(program, "theta");
+    newPosLoc = gl.getUniformLocation(program, "newPos");
+    scaleLoc = gl.getUniformLocation(program, "scale");
     
     points = []; colors = [];
     colorCube();
@@ -212,11 +227,47 @@ function colorSphere() {
 function render() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+    theta[0] = document.getElementById("rotateX").value;
+    theta[1] = document.getElementById("rotateY").value;
+    theta[2] = document.getElementById("rotateZ").value;
+    gl.uniform3fv(thetaLoc, theta);
+
+    newPos[0] = document.getElementById("moveX").value;
+    newPos[1] = document.getElementById("moveY").value;
+    newPos[2] = document.getElementById("moveZ").value;
+    gl.uniform3fv(newPosLoc, newPos);
+
+    scale[0] = document.getElementById("scaleX").value;
+    scale[1] = document.getElementById("scaleY").value;
+    scale[2] = document.getElementById("scaleZ").value;
+    gl.uniform3fv(scaleLoc, scale);
+
+    radius = document.getElementById("radius").value;
+    camPhi = document.getElementById("camPhi").value;
+    camTheta = document.getElementById("camTheta").value;
+    eye = vec3(
+        radius * Math.sin(radians(camTheta)) * Math.cos(radians(camPhi)),
+        radius * Math.sin(radians(camTheta)) * Math.sin(radians(camPhi)),
+        radius * Math.cos(radians(camTheta))
+    );
+
+    modelViewMatrix = lookAt(eye, at, up); //eye = [-4, 2, 7]
+
+    near = document.getElementById("zNear").value;
+    far = document.getElementById("zFar").value;
+    fov = document.getElementById("fov").value;
+    aspect = document.getElementById("aspect").value;
+
+    projectionMatrix = perspective(fov, aspect, near, far); //perspective(45, canvas.width / canvas.height, 0.1, 1000.0);
+ 
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
+    gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix));
+
     for (var i = 0; i < shapes.length; i++) {
         if (checks[i].checked) {
             shapes[i].draw();
         }
     }
-
+    
     requestAnimFrame(render);
 }
