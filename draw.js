@@ -7,16 +7,10 @@ var program;
 var points = [];
 var colors = [];
 var shapes = [];
-var checks = [];
+var drawObject = [];
+var selectedObject = [];
 
-var theta = [0, 0, 0];
-var thetaLoc;
-
-var newPos = [0, 0, 0];
-var newPosLoc;
-
-var scale = [0, 0, 0];
-var scaleLoc;
+var thetaLoc, newPosLoc, scaleLoc;
 
 var radius, camPhi, camTheta;
 var far, near, fov, aspect;
@@ -27,32 +21,41 @@ var up = vec3(0.0, 1.0, 0.0);
 var modelViewMatrixLoc, modelViewMatrix;
 var projectionMatrixLoc, projectionMatrix;
 
+var index = 0;
+
 class Drawable {
     constructor(vertices, color, program) {
+        this.rotation = vec3(0.0, 0.0, 0.0);
+        this.translation = vec3(0.0, 0.0, 0.0);
+        this.scaling = vec3(1.0, 1.0, 1.0);
+
         this.program = program;
+        this.vertices = vertices;
+        this.color = color;
 
         this.vBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW);
         this.vAttributeLocation = gl.getAttribLocation(program, 'vPosition');
 
-        this.vertices = vertices;
-        this.color = color;
-
         this.cBuffer = gl.createBuffer();
-        gl.bindBuffer( gl.ARRAY_BUFFER, this.cBuffer);
-        gl.bufferData( gl.ARRAY_BUFFER, flatten(this.color), gl.STATIC_DRAW );
-        this.cAttributeLocation = gl.getAttribLocation( program, 'vColor' );
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.cBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(this.color), gl.STATIC_DRAW);
+        this.cAttributeLocation = gl.getAttribLocation(program, 'vColor');
     }
 
     draw() {
+        gl.uniform3fv(thetaLoc, this.rotation);
+        gl.uniform3fv(newPosLoc, this.translation);
+        gl.uniform3fv(scaleLoc, this.scaling);
+
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
-        gl.vertexAttribPointer( this.vAttributeLocation, 4, gl.FLOAT, false, 0, 0 );
-        gl.enableVertexAttribArray( this.vAttributeLocation);
+        gl.vertexAttribPointer(this.vAttributeLocation, 4, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(this.vAttributeLocation);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.cBuffer);
-        gl.vertexAttribPointer( this.cAttributeLocation, 4, gl.FLOAT, false, 0, 0 );
-        gl.enableVertexAttribArray( this.cAttributeLocation);
+        gl.vertexAttribPointer(this.cAttributeLocation, 4, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(this.cAttributeLocation);
 
         gl.drawArrays(gl.TRIANGLES, 0, this.vertices.length);
     }
@@ -90,7 +93,8 @@ function main() {
     colorSphere();
     shapes.push(new Drawable(points, colors, program));
 
-    checks = document.querySelectorAll("#in");
+    drawObject = document.querySelectorAll("#in");
+    selectedObject = document.querySelectorAll("#transform");
     render();
 }
 
@@ -224,23 +228,41 @@ function colorSphere() {
     }
 }
 
+function updateSliders(obj) {
+    index = obj.value;
+
+    document.getElementById("rotateX").value = shapes[obj.value].rotation[0];
+    document.getElementById("rotateY").value = shapes[obj.value].rotation[1];
+    document.getElementById("rotateZ").value = shapes[obj.value].rotation[2];
+
+    document.getElementById("moveX").value = shapes[obj.value].translation[0];
+    document.getElementById("moveY").value = shapes[obj.value].translation[1];
+    document.getElementById("moveZ").value = shapes[obj.value].translation[2];
+
+    document.getElementById("scaleX").value = shapes[obj.value].scaling[0];
+    document.getElementById("scaleY").value = shapes[obj.value].scaling[1];
+    document.getElementById("scaleZ").value = shapes[obj.value].scaling[2];
+
+    var outputs = document.getElementsByTagName("output");
+    for (var i = 0; i < outputs.length; i++) {
+        outputs[i].value = outputs[i].previousElementSibling.value;
+    }
+}
+
 function render() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    theta[0] = document.getElementById("rotateX").value;
-    theta[1] = document.getElementById("rotateY").value;
-    theta[2] = document.getElementById("rotateZ").value;
-    gl.uniform3fv(thetaLoc, theta);
+    shapes[index].rotation[0] = document.getElementById("rotateX").value;
+    shapes[index].rotation[1] = document.getElementById("rotateY").value;
+    shapes[index].rotation[2] = document.getElementById("rotateZ").value;
 
-    newPos[0] = document.getElementById("moveX").value;
-    newPos[1] = document.getElementById("moveY").value;
-    newPos[2] = document.getElementById("moveZ").value;
-    gl.uniform3fv(newPosLoc, newPos);
+    shapes[index].translation[0] = document.getElementById("moveX").value;
+    shapes[index].translation[1] = document.getElementById("moveY").value;
+    shapes[index].translation[2] = document.getElementById("moveZ").value;
 
-    scale[0] = document.getElementById("scaleX").value;
-    scale[1] = document.getElementById("scaleY").value;
-    scale[2] = document.getElementById("scaleZ").value;
-    gl.uniform3fv(scaleLoc, scale);
+    shapes[index].scaling[0] = document.getElementById("scaleX").value;
+    shapes[index].scaling[1] = document.getElementById("scaleY").value;
+    shapes[index].scaling[2] = document.getElementById("scaleZ").value;
 
     radius = document.getElementById("radius").value;
     camPhi = document.getElementById("camPhi").value;
@@ -264,7 +286,11 @@ function render() {
     gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix));
 
     for (var i = 0; i < shapes.length; i++) {
-        if (checks[i].checked) {
+        if (drawObject[i].checked) {
+            // gl.uniform3fv(thetaLoc, shapes[i].rotation);
+            // gl.uniform3fv(newPosLoc, shapes[i].translation);
+            // gl.uniform3fv(scaleLoc, shapes[i].scaling);
+
             shapes[i].draw();
         }
     }

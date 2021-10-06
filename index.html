@@ -86,96 +86,129 @@
             <label for="cube">Draw Cube</label>
             
             <input type="checkbox" id="in" name="cone" checked>
-            <label for="cube">Draw Cone</label>
+            <label for="cone">Draw Cone</label>
             
             <input type="checkbox" id="in" name="sphere" checked>
-            <label for="cube">Draw Sphere</label>
+            <label for="sphere">Draw Sphere</label>
             
             <br><br>
-            <div style="float: left; margin-right: 30px;">
             <div>
-                rotateX
-                <input id="rotateX" type="range" min="-180" max="180" step="1" value="0" oninput="this.nextElementSibling.value = this.value">
-                <output>0</output>
-                <br>
+                <div>
+                    Transform: 
+                    <input type="radio" id="transform" name="object" value="0" onchange="updateSliders(this)" checked>
+                    <label for="cube">Cube</label>
+                    
+                    <input type="radio" id="transform" name="object" value="1" onchange="updateSliders(this)">
+                    <label for="cone">Cone</label>
+                    
+                    <input type="radio" id="transform" name="object" value="2" onchange="updateSliders(this)">
+                    <label for="sphere">Sphere</label>
+                </div>
 
-                rotateY
-                <input id="rotateY" type="range" min="-180" max="180" step="1" value="0" oninput="this.nextElementSibling.value = this.value">
-                <output>0</output>
-                <br>
+                <div style="float: left; width: 240px;">
+                    <div>
+                        rotateX
+                        <input id="rotateX" type="range" min="-180" max="180" step="1" value="0" oninput="this.nextElementSibling.value = this.value">
+                        <output>0</output>
+                    </div>
 
-                rotateZ
-                <input id="rotateZ" type="range" min="-180" max="180" step="1" value="0" oninput="this.nextElementSibling.value = this.value">
-                <output>0</output>
-            </div>
-            <br>
-            <div>
-                moveX
-                <input id="moveX" type="range" min="-5" max="5" step="0.1" value="0" oninput="this.nextElementSibling.value = this.value">
-                <output>0</output>
-                <br>
+                    <div>
+                        rotateY
+                        <input id="rotateY" type="range" min="-180" max="180" step="1" value="0" oninput="this.nextElementSibling.value = this.value">
+                        <output>0</output>
+                    </div>
+                    
+                    <div>
+                        rotateZ
+                        <input id="rotateZ" type="range" min="-180" max="180" step="1" value="0" oninput="this.nextElementSibling.value = this.value">
+                        <output>0</output>
+                    </div>
+                </div>
+                
+                <div style="float: left; width: 240px;">
+                    <div>
+                        moveX
+                        <input id="moveX" type="range" min="-5" max="5" step="0.1" value="0" oninput="this.nextElementSibling.value = this.value">
+                        <output>0</output>
+                    </div>
 
-                moveY
-                <input id="moveY" type="range" min="-5" max="5" step="0.1" value="0" oninput="this.nextElementSibling.value = this.value">
-                <output>0</output>
-                <br>
+                    <div>
+                        moveY
+                        <input id="moveY" type="range" min="-5" max="5" step="0.1" value="0" oninput="this.nextElementSibling.value = this.value">
+                        <output>0</output>
+                    </div>
+                    
+                    <div>
+                        moveZ
+                        <input id="moveZ" type="range" min="-5" max="5" step="0.1" value="0" oninput="this.nextElementSibling.value = this.value">
+                        <output>0</output>
+                    </div>
+                </div>
+                
+                <div style="float: left; width: 240px;">
+                    <div>
+                        scaleX
+                        <input id="scaleX" type="range" min="0" max="5" step="0.1" value="1" oninput="this.nextElementSibling.value = this.value">
+                        <output>1</output>
+                    </div>
+                    
+                    <div>
+                        scaleY
+                        <input id="scaleY" type="range" min="0" max="5" step="0.1" value="1" oninput="this.nextElementSibling.value = this.value">
+                        <output>1</output>
+                    </div>
 
-                moveZ
-                <input id="moveZ" type="range" min="-5" max="5" step="0.1" value="0" oninput="this.nextElementSibling.value = this.value">
-                <output>0</output>
-            </div>
-            <br>
-            <div>
-                scaleX
-                <input id="scaleX" type="range" min="0" max="5" step="0.1" value="1" oninput="this.nextElementSibling.value = this.value">
-                <output>1</output>
-                <br>
-
-                scaleY
-                <input id="scaleY" type="range" min="0" max="5" step="0.1" value="1" oninput="this.nextElementSibling.value = this.value">
-                <output>1</output>
-                <br>
-
-                scaleZ
-                <input id="scaleZ" type="range" min="0" max="5" step="0.1" value="1" oninput="this.nextElementSibling.value = this.value">
-                <output>1</output>
-            </div>
+                    <div>
+                        scaleZ
+                        <input id="scaleZ" type="range" min="0" max="5" step="0.1" value="1" oninput="this.nextElementSibling.value = this.value">
+                        <output>1</output>
+                    </div>
+                </div>
             </div>
             
-            <div style="float: left;">
-                radius
-                <input id="radius" type="range" min="0" max="50" step="0.1" value="8.3" oninput="this.nextElementSibling.value = this.value">
-                <output>8.3</output>
-                <br>
+            <!-- CAMERA -->
+            <div style="float: left; margin-top: 20px;">
+                <div>
+                    radius
+                    <input id="radius" type="range" min="0" max="50" step="0.1" value="8.3" oninput="this.nextElementSibling.value = this.value">
+                    <output>8.3</output>
+                </div>
 
-                camPhi
-                <input id="camPhi" type="range" min="-180" max="180" step="1" value="-25" oninput="this.nextElementSibling.value = this.value">
-                <output>-25</output>
-                <br>
+                <div>
+                    camPhi
+                    <input id="camPhi" type="range" min="-180" max="180" step="1" value="-25" oninput="this.nextElementSibling.value = this.value">
+                    <output>-25</output>
+                </div>
 
-                camTheta
-                <input id="camTheta" type="range" min="-180" max="180" step="1" value="-30" oninput="this.nextElementSibling.value = this.value">
-                <output>-30</output>
-                <br>
+                <div>
+                    camTheta
+                    <input id="camTheta" type="range" min="-180" max="180" step="1" value="-30" oninput="this.nextElementSibling.value = this.value">
+                    <output>-30</output>
+                </div>
 
-                near
-                <input id="zNear" type="range" min="0.01" max="20" step="0.1" value="0.1" oninput="this.nextElementSibling.value = this.value">
-                <output>0.1</output>
-                <br>
-
-                far
-                <input id="zFar" type="range" min="1" max="100" step="1" value="50" oninput="this.nextElementSibling.value = this.value">
-                <output>50</output>
-                <br>
-
-                FOV
-                <input id="fov" type="range" min="10" max="120" step="1" value="45" oninput="this.nextElementSibling.value = this.value">
-                <output>45</output>
-                <br>
-
-                aspect
-                <input id="aspect" type="range" min="0.5" max="2" step="0.01" value="1" oninput="this.nextElementSibling.value = this.value">
-                <output>1</output>
+                <div>
+                    near
+                    <input id="zNear" type="range" min="0.01" max="20" step="0.1" value="0.1" oninput="this.nextElementSibling.value = this.value">
+                    <output>0.1</output>
+                </div>
+                
+                <div>
+                    far
+                    <input id="zFar" type="range" min="1" max="100" step="1" value="50" oninput="this.nextElementSibling.value = this.value">
+                    <output>50</output>
+                </div>
+                
+                <div>
+                    FOV
+                    <input id="fov" type="range" min="10" max="120" step="1" value="45" oninput="this.nextElementSibling.value = this.value">
+                    <output>45</output>
+                </div>
+                
+                <div>
+                    aspect
+                    <input id="aspect" type="range" min="0.5" max="2" step="0.01" value="1" oninput="this.nextElementSibling.value = this.value">
+                    <output>1</output>
+                </div>
             </div>
         </div>
         
