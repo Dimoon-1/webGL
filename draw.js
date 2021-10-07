@@ -24,10 +24,10 @@ var projectionMatrixLoc, projectionMatrix;
 var index = 0;
 
 class Drawable {
-    constructor(vertices, color, program) {
-        this.rotation = vec3(0.0, 0.0, 0.0);
-        this.translation = vec3(0.0, 0.0, 0.0);
-        this.scaling = vec3(1.0, 1.0, 1.0);
+    constructor(vertices, color, rotation, translation, scaling, program) {
+        this.rotation = rotation;
+        this.translation = translation;
+        this.scaling = scaling;
 
         this.program = program;
         this.vertices = vertices;
@@ -83,15 +83,15 @@ function main() {
     
     points = []; colors = [];
     colorCube();
-    shapes.push(new Drawable(points, colors, program));
+    shapes.push(new Drawable(points, colors, [0.0, 0.0, 0.0], [-2.0, 0.0, 0.0], [1.0, 1.0, 1.0], program));
 
     points = []; colors = [];
     colorCone();
-    shapes.push(new Drawable(points, colors, program));
+    shapes.push(new Drawable(points, colors, [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [1.0, 1.0, 1.0], program));
 
     points = []; colors = [];
     colorSphere();
-    shapes.push(new Drawable(points, colors, program));
+    shapes.push(new Drawable(points, colors, [0.0, 0.0, 0.0], [2.5, 0.0, 0.0], [1.0, 1.0, 1.0], program));
 
     drawObject = document.querySelectorAll("#in");
     selectedObject = document.querySelectorAll("#transform");
@@ -110,14 +110,14 @@ function colorCube() {
 
 function quad(a, b, c, d) {
     var vertices = [
-        vec4( -2.5, -0.5,  0.5, 1.0 ),
-        vec4( -2.5,  0.5,  0.5, 1.0 ),
-        vec4( -1.5,  0.5,  0.5, 1.0 ),
-        vec4( -1.5, -0.5,  0.5, 1.0 ),
-        vec4( -2.5, -0.5, -0.5, 1.0 ),
-        vec4( -2.5,  0.5, -0.5, 1.0 ),
-        vec4( -1.5,  0.5, -0.5, 1.0 ),
-        vec4( -1.5, -0.5, -0.5, 1.0 ),
+        vec4(-0.5, -0.5,  0.5, 1.0 ),
+        vec4(-0.5,  0.5,  0.5, 1.0 ),
+        vec4( 0.5,  0.5,  0.5, 1.0 ),
+        vec4( 0.5, -0.5,  0.5, 1.0 ),
+        vec4(-0.5, -0.5, -0.5, 1.0 ),
+        vec4(-0.5,  0.5, -0.5, 1.0 ),
+        vec4( 0.5,  0.5, -0.5, 1.0 ),
+        vec4( 0.5, -0.5, -0.5, 1.0 )
     ];
 
     var vertexColors = [
@@ -161,7 +161,7 @@ function colorCone() {
 }
 
 function colorSphere() {
-    var cX = 2.5, cY = 0, cZ = 0;
+    var cX = 0, cY = 0, cZ = 0;
     const r = 1;
     var nrOfSegments = 30;
     var vertices = [];
@@ -287,10 +287,6 @@ function render() {
 
     for (var i = 0; i < shapes.length; i++) {
         if (drawObject[i].checked) {
-            // gl.uniform3fv(thetaLoc, shapes[i].rotation);
-            // gl.uniform3fv(newPosLoc, shapes[i].translation);
-            // gl.uniform3fv(scaleLoc, shapes[i].scaling);
-
             shapes[i].draw();
         }
     }

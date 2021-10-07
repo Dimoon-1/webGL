@@ -82,16 +82,17 @@
         </canvas>
         
         <div class="UI">
-            <input type="checkbox" id="in" name="cube" checked>
-            <label for="cube">Draw Cube</label>
-            
-            <input type="checkbox" id="in" name="cone" checked>
-            <label for="cone">Draw Cone</label>
-            
-            <input type="checkbox" id="in" name="sphere" checked>
-            <label for="sphere">Draw Sphere</label>
-            
-            <br><br>
+            <div>
+                <input type="checkbox" id="in" name="cube" checked>
+                <label for="cube">Draw Cube</label>
+                
+                <input type="checkbox" id="in" name="cone" checked>
+                <label for="cone">Draw Cone</label>
+                
+                <input type="checkbox" id="in" name="sphere" checked>
+                <label for="sphere">Draw Sphere</label>
+            </div>
+
             <div>
                 <div>
                     Transform: 
@@ -128,8 +129,8 @@
                 <div style="float: left; width: 240px;">
                     <div>
                         moveX
-                        <input id="moveX" type="range" min="-5" max="5" step="0.1" value="0" oninput="this.nextElementSibling.value = this.value">
-                        <output>0</output>
+                        <input id="moveX" type="range" min="-5" max="5" step="0.1" value="-2" oninput="this.nextElementSibling.value = this.value">
+                        <output>-2</output>
                     </div>
 
                     <div>
@@ -167,7 +168,8 @@
             </div>
             
             <!-- CAMERA -->
-            <div style="float: left; margin-top: 20px;">
+            <br><br><br><br>
+            <div>
                 <div>
                     radius
                     <input id="radius" type="range" min="0" max="50" step="0.1" value="8.3" oninput="this.nextElementSibling.value = this.value">
