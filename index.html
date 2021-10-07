@@ -6,9 +6,14 @@
         <script id="vertex-shader" type="x-shader/x-vertex">
             attribute vec4 vPosition;
             attribute vec4 vColor;
+            attribute vec3 a_normal;
+
+            varying vec3 v_normal;
+
             varying vec4 fColor;
 
             uniform mat4 mView;
+            uniform mat4 mViewInverseTranspose;
             uniform mat4 mProj;
 
             uniform vec3 theta; //for rotation
@@ -56,17 +61,27 @@
                 );
 
                 gl_Position = mProj * mView * tr * rz * ry * rx * scale * vPosition;
-                //gl_Position.z = -gl_Position.z;
+                v_normal = mat3(mViewInverseTranspose * tr * rz * ry * rx) * a_normal;
                 fColor = vColor;
             }
         </script>
 
         <script id="fragment-shader" type="x-shader/x-fragment">
             precision mediump float;
+
+            varying vec3 v_normal;
+
+            uniform vec3 u_reverseLightDirection;
+            uniform vec4 u_color;
+
             varying vec4 fColor;
 
             void main() {
-                gl_FragColor = fColor;
+                vec3 normal = normalize(v_normal);
+                float light = dot(normal, u_reverseLightDirection);
+
+                gl_FragColor = fColor *  u_color;
+                gl_FragColor.rgb *= light;
             }
         </script>
 

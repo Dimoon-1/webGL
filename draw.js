@@ -5,6 +5,7 @@ var gl;
 var program;
 
 var points = [];
+var normals = [];
 var colors = [];
 var shapes = [];
 var drawObject = [];
@@ -19,6 +20,7 @@ var eye;
 var at = vec3(0.0, 0.0, 0.0);
 var up = vec3(0.0, 1.0, 0.0);
 var modelViewMatrixLoc, modelViewMatrix;
+var modelInverseTransposeLoc, modelInverseTranspose;
 var projectionMatrixLoc, projectionMatrix;
 
 var index = 0;
@@ -31,12 +33,18 @@ class Drawable {
 
         this.program = program;
         this.vertices = vertices;
+        this.normals = normals
         this.color = color;
 
         this.vBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW);
         this.vAttributeLocation = gl.getAttribLocation(program, 'vPosition');
+
+        this.nBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.nBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(normals), gl.STATIC_DRAW);
+        this.nAttributeLocation = gl.getAttribLocation(program, 'a_normal');
 
         this.cBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.cBuffer);
@@ -52,6 +60,10 @@ class Drawable {
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
         gl.vertexAttribPointer(this.vAttributeLocation, 4, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vAttributeLocation);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.nBuffer);
+        gl.vertexAttribPointer(this.nAttributeLocation, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(this.nAttributeLocation);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.cBuffer);
         gl.vertexAttribPointer(this.cAttributeLocation, 4, gl.FLOAT, false, 0, 0);
@@ -69,27 +81,34 @@ function main() {
     }
 
     gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.clearColor(0.0, 0.0, 0.0, 0.1);
+    gl.clearColor(0.07, 0.07, 0.07, 1);
     gl.enable(gl.DEPTH_TEST);
 
     program = initShaders(gl, "vertex-shader", "fragment-shader");
     gl.useProgram(program);
 
     modelViewMatrixLoc = gl.getUniformLocation(program, 'mView');
+    modelInverseTransposeLoc = gl.getUniformLocation(program, "mViewInverseTranspose");
     projectionMatrixLoc = gl.getUniformLocation(program, 'mProj');
     thetaLoc = gl.getUniformLocation(program, "theta");
     newPosLoc = gl.getUniformLocation(program, "newPos");
     scaleLoc = gl.getUniformLocation(program, "scale");
-    
-    points = []; colors = [];
+
+    var colorLoc = gl.getUniformLocation(program, "u_color");
+    gl.uniform4fv(colorLoc, [1.0, 1.0, 1.0, 1]);
+
+    var reverseLightDirectionLoc = gl.getUniformLocation(program, "u_reverseLightDirection");
+    gl.uniform3fv(reverseLightDirectionLoc, [-0.5, -0.7, -1]);
+
+    points = []; normals = []; colors = [];
     colorCube();
     shapes.push(new Drawable(points, colors, [0.0, 0.0, 0.0], [-2.0, 0.0, 0.0], [1.0, 1.0, 1.0], program));
 
-    points = []; colors = [];
+    points = []; normals = []; colors = [];
     colorCone();
     shapes.push(new Drawable(points, colors, [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [1.0, 1.0, 1.0], program));
 
-    points = []; colors = [];
+    points = []; normals = []; colors = [];
     colorSphere();
     shapes.push(new Drawable(points, colors, [0.0, 0.0, 0.0], [2.5, 0.0, 0.0], [1.0, 1.0, 1.0], program));
 
@@ -98,6 +117,14 @@ function main() {
     render();
 }
 
+function calculateNormal(a, b, c) {
+    var t1 = subtract(b, a);
+	var t2 = subtract(c, a);
+	var normal = normalize(cross(t2, t1));
+
+    normal = vec4(normal);
+	return normal;
+}
 
 function colorCube() {
     quad( 1, 0, 3, 2 );
@@ -131,10 +158,14 @@ function quad(a, b, c, d) {
         [ 1.0, 1.0, 1.0, 1.0 ]   // white
     ];
 
-    var indices = [ a, b, c, a, c, d ];
+    var t1 = subtract(vertices[a], vertices[b]);
+    var t2 = subtract(vertices[c], vertices[b]);
+    var normal = vec3(cross(t1, t2));
 
+    var indices = [ a, b, c, a, c, d ];
     for ( var i = 0; i < indices.length; i++ ) {
-        points.push( vertices[indices[i]] );
+        points.push(vertices[indices[i]]);
+        normals.push(normal);
         colors.push(vertexColors[a]);
     }
 }
@@ -144,7 +175,7 @@ function colorCone() {
     const r = 1;
     const step = radians(20);
 
-    for (var theta = 0; theta < 2 * Math.PI - step; theta += step) {
+    for (var theta = 0; theta < 2 * Math.PI; theta += step) {
         x = r * Math.cos(theta);
         z = r * Math.sin(theta);
         points.push(vec4(x, -0.5, z, 1.0));
@@ -153,10 +184,17 @@ function colorCone() {
         points.push(vec4(0.0, 1.0, 0.0, 1.0));
         colors.push([1, 0, 1, 1.0]);
 
-        x = r * Math.cos(theta + radians(20));
-        z = r * Math.sin(theta + radians(20));
+        x = r * Math.cos(theta + step);
+        z = r * Math.sin(theta + step);
         points.push(vec4(x, -0.5, z, 1.0));
         colors.push([Math.abs(Math.tan(x * z)), Math.abs(z + x), Math.tan(x + z), 1.0]);
+    }
+    
+    for (var i = 0; i < points.length; i += 3) {
+        var normal = calculateNormal(points[i], points[i + 1], points[i + 2]);
+        normals.push(vec3(normal));
+        normals.push(vec3(normal));
+        normals.push(vec3(normal));
     }
 }
 
@@ -187,8 +225,8 @@ function colorSphere() {
     var color1 = [Math.random(), Math.random(), Math.random(), 1.0];
     var color2 = [Math.random(), Math.random(), Math.random(), 1.0];
     for (var i = 0; i < nrOfSegments; i++) {
-        var idx0 = i + 1;
-        var idx1 = (i + 1) % nrOfSegments + 1;
+        var idx0 = (i + 1) % nrOfSegments + 1;
+        var idx1 = i + 1;
 
         points.push(vertices[0]);
         colors.push(color1);
@@ -225,6 +263,13 @@ function colorSphere() {
             points.push(vertices[idx1 + j]);
             colors.push(i % 2 ? color1 : color2);
         }
+    }
+
+    for (var i = 0; i < points.length; i += 3) {
+        var normal = calculateNormal(points[i], points[i + 1], points[i + 2]);
+        normals.push(vec3(normal));
+        normals.push(vec3(normal));
+        normals.push(vec3(normal));
     }
 }
 
@@ -283,6 +328,7 @@ function render() {
     projectionMatrix = perspective(fov, aspect, near, far); //perspective(45, canvas.width / canvas.height, 0.1, 1000.0);
  
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
+    gl.uniformMatrix4fv(modelInverseTransposeLoc, false, flatten(transpose(inverse(modelViewMatrix))));
     gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix));
 
     for (var i = 0; i < shapes.length; i++) {
