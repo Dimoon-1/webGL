@@ -23,10 +23,23 @@ var modelViewMatrixLoc, modelViewMatrix;
 var modelInverseTransposeLoc, modelInverseTranspose;
 var projectionMatrixLoc, projectionMatrix;
 
-var index = 0;
+var lights = [];
+var diffuseProducts = [];
+var specularProducts = [];
+var lightPositionLoc1, lightPosition1 = vec4(4.0, 1.0, 2.0, 1.0);
+var lightPositionLoc2, lightPosition2 = vec4(-3.0, 0.0, -2.0, 1.0);
+var lightPositionLoc3, lightPosition3 = vec4(-1.0, 2.0, 4.0, 1.0);
+var diffuseProductLoc1, diffuseProductLoc2, diffuseProductLoc3;
+var specularProductLoc1, specularProductLoc2, specularProductLoc3;
+
+var ambientColorLoc, ambientColor = vec4(0.05, 0.05, 0.05, 1.0);
+var shininessLoc, shininess;
+
+var index = 0,
+    lightIndex = 0;
 
 class Drawable {
-    constructor(vertices, color, rotation, translation, scaling, program) {
+    constructor(vertices, normals, color, rotation, translation, scaling, program) {
         this.rotation = rotation;
         this.translation = translation;
         this.scaling = scaling;
@@ -38,13 +51,13 @@ class Drawable {
 
         this.vBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(this.vertices), gl.STATIC_DRAW);
         this.vAttributeLocation = gl.getAttribLocation(program, 'vPosition');
 
         this.nBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.nBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(normals), gl.STATIC_DRAW);
-        this.nAttributeLocation = gl.getAttribLocation(program, 'a_normal');
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(this.normals), gl.STATIC_DRAW);
+        this.nAttributeLocation = gl.getAttribLocation(program, 'vNormal');
 
         this.cBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.cBuffer);
@@ -94,48 +107,138 @@ function main() {
     newPosLoc = gl.getUniformLocation(program, "newPos");
     scaleLoc = gl.getUniformLocation(program, "scale");
 
-    var colorLoc = gl.getUniformLocation(program, "u_color");
-    gl.uniform4fv(colorLoc, [1.0, 1.0, 1.0, 1]);
+    lightPositionLoc1 = gl.getUniformLocation(program, "lightPosition1");
+    diffuseProductLoc1 = gl.getUniformLocation(program, "diffuseProduct1");
+    specularProductLoc1 = gl.getUniformLocation(program, "specularProduct1");
+    diffuseProducts.push(vec4(1.0, 1.0, 1.0, 1.0));
+    specularProducts.push(vec4(1.0, 1.0, 1.0, 1.0));
 
-    var reverseLightDirectionLoc = gl.getUniformLocation(program, "u_reverseLightDirection");
-    gl.uniform3fv(reverseLightDirectionLoc, [-0.5, -0.7, -1]);
+    lightPositionLoc2 = gl.getUniformLocation(program, "lightPosition2");
+    diffuseProductLoc2 = gl.getUniformLocation(program, "diffuseProduct2");
+    specularProductLoc2 = gl.getUniformLocation(program, "specularProduct2");
+    diffuseProducts.push(vec4(0.0, 1.0, 0.0, 1.0));
+    specularProducts.push(vec4(0.0, 1.0, 0.0, 1.0));
+
+    lightPositionLoc3 = gl.getUniformLocation(program, "lightPosition3");
+    diffuseProductLoc3 = gl.getUniformLocation(program, "diffuseProduct3");
+    specularProductLoc3 = gl.getUniformLocation(program, "specularProduct3");
+    diffuseProducts.push(vec4(0.0, 0.0, 1.0, 1.0));
+    specularProducts.push(vec4(0.0, 0.0, 1.0, 1.0));
+
+    ambientColorLoc = gl.getUniformLocation(program, "ambientProduct");
+    shininessLoc = gl.getUniformLocation(program, "shininess");
 
     points = []; normals = []; colors = [];
-    colorCube();
-    shapes.push(new Drawable(points, colors, [0.0, 0.0, 0.0], [-2.0, 0.0, 0.0], [1.0, 1.0, 1.0], program));
+    colorCube([ 1.0, 0.0, 0.0, 1.0 ]);
+    shapes.push(
+        new Drawable(
+            points,
+            normals,
+            colors,
+            [0.0, 0.0, 0.0],
+            [-2.0, 0.0, 0.0],
+            [1.0, 1.0, 1.0],
+            program
+        )
+    );
 
     points = []; normals = []; colors = [];
     colorCone();
-    shapes.push(new Drawable(points, colors, [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [1.0, 1.0, 1.0], program));
+    shapes.push(
+        new Drawable(
+            points,
+            normals,
+            colors,
+            [0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0],
+            [1.0, 1.0, 1.0],
+            program
+        )
+    );
 
     points = []; normals = []; colors = [];
     colorSphere();
-    shapes.push(new Drawable(points, colors, [0.0, 0.0, 0.0], [2.5, 0.0, 0.0], [1.0, 1.0, 1.0], program));
+    shapes.push(
+        new Drawable(
+            points,
+            normals,
+            colors,
+            [0.0, 0.0, 0.0],
+            [2.5, 0.0, 0.0],
+            [1.0, 1.0, 1.0],
+            program
+        )
+    );
+
+    points = []; normals = []; colors = [];
+    colorCube([1.0, 0.0, 0.0, 1.0]);
+    lights.push(
+        new Drawable(
+            points,
+            normals,
+            colors,
+            [0.0, 0.0, 0.0],
+            vec3(lightPosition1),
+            [0.2, 0.2, 0.2],
+            program
+        )
+    );
+
+    points = []; normals = []; colors = [];
+    colorCube([0.0, 1.0, 0.0, 1.0]);
+    lights.push(
+        new Drawable(
+            points,
+            normals,
+            colors,
+            [0.0, 0.0, 0.0],
+            vec3(lightPosition2),
+            [0.2, 0.2, 0.2],
+            program
+        )
+    );
+
+    points = []; normals = []; colors = [];
+    colorCube([0.0, 0.0, 1.0, 1.0]);
+    lights.push(
+        new Drawable(
+            points,
+            normals,
+            colors,
+            [0.0, 0.0, 0.0],
+            vec3(lightPosition3),
+            [0.2, 0.2, 0.2],
+            program
+        )
+    );
 
     drawObject = document.querySelectorAll("#in");
-    selectedObject = document.querySelectorAll("#transform");
+    selectedObject.push(document.getElementById("#transformCube"));
+    selectedObject.push(document.getElementById("#transformCone"));
+    selectedObject.push(document.getElementById("#transformSphere"));
+
     render();
 }
 
 function calculateNormal(a, b, c) {
     var t1 = subtract(b, a);
 	var t2 = subtract(c, a);
-	var normal = normalize(cross(t2, t1));
+	var normal = normalize(cross(t1, t2));
 
     normal = vec4(normal);
 	return normal;
 }
 
-function colorCube() {
-    quad( 1, 0, 3, 2 );
-    quad( 2, 3, 7, 6 );
-    quad( 3, 0, 4, 7 );
-    quad( 6, 5, 1, 2 );
-    quad( 4, 5, 6, 7 );
-    quad( 5, 4, 0, 1 );
+function colorCube(color) {
+    quad( 1, 0, 3, 2, color );
+    quad( 2, 3, 7, 6, color );
+    quad( 3, 0, 4, 7, color );
+    quad( 6, 5, 1, 2, color );
+    quad( 4, 5, 6, 7, color );
+    quad( 5, 4, 0, 1, color );
 }
 
-function quad(a, b, c, d) {
+function quad(a, b, c, d, color) {
     var vertices = [
         vec4(-0.5, -0.5,  0.5, 1.0 ),
         vec4(-0.5,  0.5,  0.5, 1.0 ),
@@ -160,13 +263,13 @@ function quad(a, b, c, d) {
 
     var t1 = subtract(vertices[a], vertices[b]);
     var t2 = subtract(vertices[c], vertices[b]);
-    var normal = vec3(cross(t1, t2));
+    var normal = vec3(cross(t2, t1));
 
     var indices = [ a, b, c, a, c, d ];
     for ( var i = 0; i < indices.length; i++ ) {
         points.push(vertices[indices[i]]);
         normals.push(normal);
-        colors.push(vertexColors[a]);
+        colors.push(color);
     }
 }
 
@@ -294,6 +397,22 @@ function updateSliders(obj) {
     }
 }
 
+function updateLightSliders(obj) {
+    lightIndex = obj.value;
+
+    document.getElementById("moveLightX").value = lights[obj.value].translation[0];
+    document.getElementById("moveLightY").value = lights[obj.value].translation[1];
+    document.getElementById("moveLightZ").value = lights[obj.value].translation[2];
+
+    document.getElementById("diffuse").value = "#" + ((1 << 24) + ((diffuseProducts[obj.value][0] * 255) << 16) + ((diffuseProducts[obj.value][1] * 255) << 8) + diffuseProducts[obj.value][2] * 255).toString(16).slice(1);
+    document.getElementById("specular").value = "#" + ((1 << 24) + ((specularProducts[obj.value][0] * 255) << 16) + ((specularProducts[obj.value][1] * 255) << 8) + specularProducts[obj.value][2] * 255).toString(16).slice(1);
+
+    var outputs = document.getElementsByTagName("output");
+    for (var i = 0; i < outputs.length; i++) {
+        outputs[i].value = outputs[i].previousElementSibling.value;
+    }
+}
+
 function render() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -331,11 +450,40 @@ function render() {
     gl.uniformMatrix4fv(modelInverseTransposeLoc, false, flatten(transpose(inverse(modelViewMatrix))));
     gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix));
 
+    lights[lightIndex].translation[0] = document.getElementById("moveLightX").value;
+    lights[lightIndex].translation[1] = document.getElementById("moveLightY").value;
+    lights[lightIndex].translation[2] = document.getElementById("moveLightZ").value;
+    lightPosition2 = vec4(lights[lightIndex].translation, 1.0);
+
+    diffuseProducts[lightIndex] = vec4(document.getElementById("diffuse").value.match(/[A-Za-z0-9]{2}/g).map(function(v) {return parseInt(v, 16) / 255}), 1.0);
+    specularProducts[lightIndex] = vec4(document.getElementById("specular").value.match(/[A-Za-z0-9]{2}/g).map(function(v) {return parseInt(v, 16) / 255}), 1.0);
+    
+    gl.uniform4fv(lightPositionLoc1, flatten(vec4(lights[0].translation, 1.0)));
+    gl.uniform4fv(diffuseProductLoc1, flatten(diffuseProducts[0]));
+    gl.uniform4fv(specularProductLoc1, flatten(specularProducts[0]));
+    
+    gl.uniform4fv(lightPositionLoc2, flatten(vec4(lights[1].translation, 1.0)));
+    gl.uniform4fv(diffuseProductLoc2, flatten(diffuseProducts[1]));
+    gl.uniform4fv(specularProductLoc2, flatten(specularProducts[1]));
+
+    gl.uniform4fv(lightPositionLoc3, flatten(vec4(lights[2].translation, 1.0)));
+    gl.uniform4fv(diffuseProductLoc3, flatten(diffuseProducts[2]));
+    gl.uniform4fv(specularProductLoc3, flatten(specularProducts[2]));
+
+    ambientColor = vec4(document.getElementById("ambient").value.match(/[A-Za-z0-9]{2}/g).map(function(v) {return parseInt(v, 16) / 255}), 1.0);
+    shininess = document.getElementById("shininess").value;
+    gl.uniform4fv(ambientColorLoc, flatten(ambientColor));
+    gl.uniform1f(shininessLoc, shininess);
+
+
+    lights[2].color = lights[2].color.map(x => [1.0, 1.0, 1.0, 1.0]);
+
     for (var i = 0; i < shapes.length; i++) {
         if (drawObject[i].checked) {
             shapes[i].draw();
         }
+        lights[i].draw();
     }
-    
+
     requestAnimFrame(render);
 }

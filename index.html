@@ -5,12 +5,24 @@
 
         <script id="vertex-shader" type="x-shader/x-vertex">
             attribute vec4 vPosition;
+            attribute vec4 vNormal;
             attribute vec4 vColor;
-            attribute vec3 a_normal;
-
-            varying vec3 v_normal;
-
             varying vec4 fColor;
+
+            uniform vec4 lightPosition1;
+            uniform vec4 diffuseProduct1;
+            uniform vec4 specularProduct1;
+
+            uniform vec4 lightPosition2;
+            uniform vec4 diffuseProduct2;
+            uniform vec4 specularProduct2;
+
+            uniform vec4 lightPosition3;
+            uniform vec4 diffuseProduct3;
+            uniform vec4 specularProduct3;
+
+            uniform float shininess;
+            uniform vec4 ambientProduct;
 
             uniform mat4 mView;
             uniform mat4 mViewInverseTranspose;
@@ -61,29 +73,73 @@
                 );
 
                 gl_Position = mProj * mView * tr * rz * ry * rx * scale * vPosition;
-                v_normal = mat3(mViewInverseTranspose * tr * rz * ry * rx) * a_normal;
-                fColor = vColor;
+
+                vec3 vertexPos = (tr * rz * ry * rx * scale * vPosition).xyz;
+                vec3 normalVector = normalize((tr * rz * ry * rx * scale * vNormal).xyz);
+
+                vec3 lightVector1 = normalize(lightPosition1.xyz - vertexPos);
+                float diffuseValue1 = max(dot(lightVector1, normalVector), 0.0) / length(lightPosition1.xyz - vertexPos);
+                float specularValue1 = pow(diffuseValue1, shininess);
+
+                vec3 lightVector2 = normalize(lightPosition2.xyz - vertexPos);
+                float diffuseValue2 = max(dot(lightVector2, normalVector), 0.0) / length(lightPosition2.xyz - vertexPos);
+                float specularValue2 = pow(diffuseValue2, shininess);
+
+                vec3 lightVector3 = normalize(lightPosition3.xyz - vertexPos);
+                float diffuseValue3 = max(dot(lightVector3, normalVector), 0.0) / length(lightPosition3.xyz - vertexPos);
+                float specularValue3 = pow(diffuseValue3, shininess);
+
+                vec4 diffuse = diffuseProduct1 * diffuseValue1 + diffuseProduct2 * diffuseValue2 + diffuseProduct3 * diffuseValue3;
+                vec4 specular = specularProduct1 * specularValue1 + specularProduct2 * specularValue2 + specularProduct3 * specularValue3;
+                fColor = vColor * (diffuse + specular + ambientProduct);
             }
         </script>
 
         <script id="fragment-shader" type="x-shader/x-fragment">
             precision mediump float;
-
-            varying vec3 v_normal;
-
-            uniform vec3 u_reverseLightDirection;
-            uniform vec4 u_color;
-
             varying vec4 fColor;
 
             void main() {
-                vec3 normal = normalize(v_normal);
-                float light = dot(normal, u_reverseLightDirection);
-
-                gl_FragColor = fColor *  u_color;
-                gl_FragColor.rgb *= light;
+                gl_FragColor = fColor;
             }
         </script>
+
+        <style>
+            body {
+                width: 90vw;
+                height: 725px;
+                border: 1px solid black;
+            }
+            .topnav {
+              overflow: hidden;
+              background-color: grey;
+            }
+
+            .topnav button {
+                background-color: grey;
+                width: 100px;
+                border: none;
+                outline: none;
+                float: left;
+                color: #f2f2f2;
+                text-align: center;
+                padding: 14px 16px;
+                text-decoration: none;
+                font-size: 17px;
+                cursor: pointer;
+            }
+            
+            .topnav .active, button:hover {
+              background-color: #666;
+              color: white;
+            }
+            
+            .group:after {
+                content: "";
+                display: table;
+                clear: both;
+            }
+        </style>
 
         <script type="text/javascript" src="lib/webgl-utils.js"></script>
         <script type="text/javascript" src="lib/initShaders.js"></script>
@@ -92,99 +148,166 @@
     </head>
 
     <body onload="main()">
+        <div class="topnav">
+            <button class="btn active" onclick="generalMenu()">General</button>
+            <button class="btn" onclick="lightMenu()">Light</button>
+            <button class="btn" onclick="cameraMenu()">Camera</button>
+        </div>
         <canvas id="mycanvas" width="512" height="512">
             Your browser doesn't support the HTML5 canvas element!
         </canvas>
         
-        <div class="UI">
-            <div>
-                <input type="checkbox" id="in" name="cube" checked>
-                <label for="cube">Draw Cube</label>
-                
-                <input type="checkbox" id="in" name="cone" checked>
-                <label for="cone">Draw Cone</label>
-                
-                <input type="checkbox" id="in" name="sphere" checked>
-                <label for="sphere">Draw Sphere</label>
-            </div>
-
-            <div>
+        <div id="UI">
+            <div id="general" class="group" style="display: block;">
                 <div>
-                    Transform: 
-                    <input type="radio" id="transform" name="object" value="0" onchange="updateSliders(this)" checked>
-                    <label for="cube">Cube</label>
+                    <input type="checkbox" id="in" name="cube" checked>
+                    <label for="cube">Draw Cube</label>
                     
-                    <input type="radio" id="transform" name="object" value="1" onchange="updateSliders(this)">
-                    <label for="cone">Cone</label>
+                    <input type="checkbox" id="in" name="cone" checked>
+                    <label for="cone">Draw Cone</label>
                     
-                    <input type="radio" id="transform" name="object" value="2" onchange="updateSliders(this)">
-                    <label for="sphere">Sphere</label>
+                    <input type="checkbox" id="in" name="sphere" checked>
+                    <label for="sphere">Draw Sphere</label>
                 </div>
-
-                <div style="float: left; width: 240px;">
+    
+                <div>
                     <div>
-                        rotateX
-                        <input id="rotateX" type="range" min="-180" max="180" step="1" value="0" oninput="this.nextElementSibling.value = this.value">
-                        <output>0</output>
+                        <form>
+                        Transform: 
+                            <input type="radio" id="transformCube" name="object" value="0" onchange="updateSliders(this)" checked>
+                            <label for="transformCube">Cube</label>
+                            
+                            <input type="radio" id="transformCone" name="object" value="1" onchange="updateSliders(this)">
+                            <label for="transformCone">Cone</label>
+                            
+                            <input type="radio" id="transformSphere" name="object" value="2" onchange="updateSliders(this)">
+                            <label for="transformSphere">Sphere</label>
+                        </form>
                     </div>
-
-                    <div>
-                        rotateY
-                        <input id="rotateY" type="range" min="-180" max="180" step="1" value="0" oninput="this.nextElementSibling.value = this.value">
-                        <output>0</output>
-                    </div>
-                    
-                    <div>
-                        rotateZ
-                        <input id="rotateZ" type="range" min="-180" max="180" step="1" value="0" oninput="this.nextElementSibling.value = this.value">
-                        <output>0</output>
-                    </div>
-                </div>
-                
-                <div style="float: left; width: 240px;">
-                    <div>
-                        moveX
-                        <input id="moveX" type="range" min="-5" max="5" step="0.1" value="-2" oninput="this.nextElementSibling.value = this.value">
-                        <output>-2</output>
-                    </div>
-
-                    <div>
-                        moveY
-                        <input id="moveY" type="range" min="-5" max="5" step="0.1" value="0" oninput="this.nextElementSibling.value = this.value">
-                        <output>0</output>
-                    </div>
-                    
-                    <div>
-                        moveZ
-                        <input id="moveZ" type="range" min="-5" max="5" step="0.1" value="0" oninput="this.nextElementSibling.value = this.value">
-                        <output>0</output>
-                    </div>
-                </div>
-                
-                <div style="float: left; width: 240px;">
-                    <div>
-                        scaleX
-                        <input id="scaleX" type="range" min="0" max="5" step="0.1" value="1" oninput="this.nextElementSibling.value = this.value">
-                        <output>1</output>
+    
+                    <div style="float: left; width: 240px;">
+                        <div>
+                            rotateX
+                            <input id="rotateX" type="range" min="-180" max="180" step="1" value="0" oninput="this.nextElementSibling.value = this.value">
+                            <output>0</output>
+                        </div>
+    
+                        <div>
+                            rotateY
+                            <input id="rotateY" type="range" min="-180" max="180" step="1" value="0" oninput="this.nextElementSibling.value = this.value">
+                            <output>0</output>
+                        </div>
+                        
+                        <div>
+                            rotateZ
+                            <input id="rotateZ" type="range" min="-180" max="180" step="1" value="0" oninput="this.nextElementSibling.value = this.value">
+                            <output>0</output>
+                        </div>
                     </div>
                     
-                    <div>
-                        scaleY
-                        <input id="scaleY" type="range" min="0" max="5" step="0.1" value="1" oninput="this.nextElementSibling.value = this.value">
-                        <output>1</output>
+                    <div style="float: left; width: 240px;">
+                        <div>
+                            moveX
+                            <input id="moveX" type="range" min="-5" max="5" step="0.1" value="-2" oninput="this.nextElementSibling.value = this.value">
+                            <output>-2</output>
+                        </div>
+    
+                        <div>
+                            moveY
+                            <input id="moveY" type="range" min="-5" max="5" step="0.1" value="0" oninput="this.nextElementSibling.value = this.value">
+                            <output>0</output>
+                        </div>
+                        
+                        <div>
+                            moveZ
+                            <input id="moveZ" type="range" min="-5" max="5" step="0.1" value="0" oninput="this.nextElementSibling.value = this.value">
+                            <output>0</output>
+                        </div>
                     </div>
-
-                    <div>
-                        scaleZ
-                        <input id="scaleZ" type="range" min="0" max="5" step="0.1" value="1" oninput="this.nextElementSibling.value = this.value">
-                        <output>1</output>
+                    
+                    <div style="float: left; width: 240px;">
+                        <div>
+                            scaleX
+                            <input id="scaleX" type="range" min="0" max="5" step="0.1" value="1" oninput="this.nextElementSibling.value = this.value">
+                            <output>1</output>
+                        </div>
+                        
+                        <div>
+                            scaleY
+                            <input id="scaleY" type="range" min="0" max="5" step="0.1" value="1" oninput="this.nextElementSibling.value = this.value">
+                            <output>1</output>
+                        </div>
+    
+                        <div>
+                            scaleZ
+                            <input id="scaleZ" type="range" min="0" max="5" step="0.1" value="1" oninput="this.nextElementSibling.value = this.value">
+                            <output>1</output>
+                        </div>
                     </div>
                 </div>
             </div>
             
-            <!-- CAMERA -->
-            <br><br><br><br>
-            <div>
+            <div id="light" class="group" style="display: none;">
+                <div style="float: left;">
+                    <div>
+                        <form>
+                            Translate Light:
+                            <input type="radio" id="transformL1" name="object" value="0" onchange="updateLightSliders(this)" checked>
+                            <label for="transformL1">Light 1</label>
+                            
+                            <input type="radio" id="transformL2" name="object" value="1" onchange="updateLightSliders(this)">
+                            <label for="transformL2">Light 2</label>
+                            
+                            <input type="radio" id="transformL3" name="object" value="2" onchange="updateLightSliders(this)">
+                            <label for="transformL3">Light 3</label>
+                        </form>
+                    </div>
+
+                    <div>
+                        X
+                        <input id="moveLightX" type="range" min="-5" max="5" step="0.1" value="4" oninput="this.nextElementSibling.value = this.value">
+                        <output>4</output>
+                    </div>
+
+                    <div>
+                        Y
+                        <input id="moveLightY" type="range" min="-5" max="5" step="0.1" value="1" oninput="this.nextElementSibling.value = this.value">
+                        <output>1</output>
+                    </div>
+                    
+                    <div>
+                        Z
+                        <input id="moveLightZ" type="range" min="-5" max="5" step="0.1" value="2" oninput="this.nextElementSibling.value = this.value">
+                        <output>2</output>
+                    </div>
+
+                    <div>
+                        Shininess
+                        <input id="shininess" type="range" min="0.5" max="5" step="0.1" value="5" oninput="this.nextElementSibling.value = this.value">
+                        <output>5</output>
+                    </div>
+                </div>
+
+                <br>
+                <div style="float: left; width: 240px;">
+                    <div>
+                        <input type="color" id="diffuse" value="#FFFFFF">
+                        <label for="diffuse">Diffuse Color</label>
+                    </div>
+
+                    <div>
+                        <input type="color" id="specular" value="#FFFFFF">
+                        <label for="specular">Specular Color</label>
+                    </div>
+
+                    <div>
+                        <input type="color" id="ambient" value="#121212">
+                        <label for="ambient">Ambient Color</label>
+                    </div>
+                </div>
+            </div>
+
+            <div id="camera" style="display: none;">
                 <div>
                     radius
                     <input id="radius" type="range" min="0" max="50" step="0.1" value="8.3" oninput="this.nextElementSibling.value = this.value">
@@ -228,6 +351,33 @@
                 </div>
             </div>
         </div>
-        
+        <script>
+            var btns = document.getElementsByClassName("btn");
+            for (var i = 0; i < btns.length; i++) {
+                btns[i].addEventListener("click", function() {
+                    var current = document.getElementsByClassName("active");
+                    current[0].className = current[0].className.replace(" active", "");
+                    this.className += " active";
+                });
+            }
+
+            function generalMenu() {
+                document.getElementById("general").style.display = "block";
+                document.getElementById("light").style.display = "none";
+                document.getElementById("camera").style.display = "none";
+            }
+
+            function lightMenu() {
+                document.getElementById("general").style.display = "none";
+                document.getElementById("light").style.display = "block";
+                document.getElementById("camera").style.display = "none";
+            }
+
+            function cameraMenu() {
+                document.getElementById("general").style.display = "none";
+                document.getElementById("light").style.display = "none";
+                document.getElementById("camera").style.display = "block";
+            }
+        </script>
     </body>
 </html>
