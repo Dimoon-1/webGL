@@ -158,91 +158,64 @@
         </canvas>
         
         <div id="UI">
-            <div id="general" class="group" style="display: block;">
-                <div>
-                    <input type="checkbox" id="in" name="cube" checked>
-                    <label for="cube">Draw Cube</label>
-                    
-                    <input type="checkbox" id="in" name="cone" checked>
-                    <label for="cone">Draw Cone</label>
-                    
-                    <input type="checkbox" id="in" name="sphere" checked>
-                    <label for="sphere">Draw Sphere</label>
-                </div>
-    
-                <div>
+            <div id="general" class="group" style="display: block;">    
+                <div style="float: left; width: 240px;">
                     <div>
-                        <form>
-                        Transform: 
-                            <input type="radio" id="transformCube" name="object" value="0" onchange="updateSliders(this)" checked>
-                            <label for="transformCube">Cube</label>
-                            
-                            <input type="radio" id="transformCone" name="object" value="1" onchange="updateSliders(this)">
-                            <label for="transformCone">Cone</label>
-                            
-                            <input type="radio" id="transformSphere" name="object" value="2" onchange="updateSliders(this)">
-                            <label for="transformSphere">Sphere</label>
-                        </form>
+                        rotateX
+                        <input id="rotateX" type="range" min="-180" max="180" step="1" value="0" oninput="this.nextElementSibling.value = this.value">
+                        <output>0</output>
                     </div>
-    
-                    <div style="float: left; width: 240px;">
-                        <div>
-                            rotateX
-                            <input id="rotateX" type="range" min="-180" max="180" step="1" value="0" oninput="this.nextElementSibling.value = this.value">
-                            <output>0</output>
-                        </div>
-    
-                        <div>
-                            rotateY
-                            <input id="rotateY" type="range" min="-180" max="180" step="1" value="0" oninput="this.nextElementSibling.value = this.value">
-                            <output>0</output>
-                        </div>
-                        
-                        <div>
-                            rotateZ
-                            <input id="rotateZ" type="range" min="-180" max="180" step="1" value="0" oninput="this.nextElementSibling.value = this.value">
-                            <output>0</output>
-                        </div>
+
+                    <div>
+                        rotateY
+                        <input id="rotateY" type="range" min="-180" max="180" step="1" value="0" oninput="this.nextElementSibling.value = this.value">
+                        <output>0</output>
                     </div>
                     
-                    <div style="float: left; width: 240px;">
-                        <div>
-                            moveX
-                            <input id="moveX" type="range" min="-5" max="5" step="0.1" value="-2" oninput="this.nextElementSibling.value = this.value">
-                            <output>-2</output>
-                        </div>
-    
-                        <div>
-                            moveY
-                            <input id="moveY" type="range" min="-5" max="5" step="0.1" value="0" oninput="this.nextElementSibling.value = this.value">
-                            <output>0</output>
-                        </div>
-                        
-                        <div>
-                            moveZ
-                            <input id="moveZ" type="range" min="-5" max="5" step="0.1" value="0" oninput="this.nextElementSibling.value = this.value">
-                            <output>0</output>
-                        </div>
+                    <div>
+                        rotateZ
+                        <input id="rotateZ" type="range" min="-180" max="180" step="1" value="0" oninput="this.nextElementSibling.value = this.value">
+                        <output>0</output>
+                    </div>
+                </div>
+                
+                <div style="float: left; width: 240px;">
+                    <div>
+                        moveX
+                        <input id="moveX" type="range" min="-5" max="5" step="0.1" value="0" oninput="this.nextElementSibling.value = this.value">
+                        <output>0</output>
+                    </div>
+
+                    <div>
+                        moveY
+                        <input id="moveY" type="range" min="-5" max="5" step="0.1" value="0" oninput="this.nextElementSibling.value = this.value">
+                        <output>0</output>
                     </div>
                     
-                    <div style="float: left; width: 240px;">
-                        <div>
-                            scaleX
-                            <input id="scaleX" type="range" min="0" max="5" step="0.1" value="1" oninput="this.nextElementSibling.value = this.value">
-                            <output>1</output>
-                        </div>
-                        
-                        <div>
-                            scaleY
-                            <input id="scaleY" type="range" min="0" max="5" step="0.1" value="1" oninput="this.nextElementSibling.value = this.value">
-                            <output>1</output>
-                        </div>
-    
-                        <div>
-                            scaleZ
-                            <input id="scaleZ" type="range" min="0" max="5" step="0.1" value="1" oninput="this.nextElementSibling.value = this.value">
-                            <output>1</output>
-                        </div>
+                    <div>
+                        moveZ
+                        <input id="moveZ" type="range" min="-5" max="5" step="0.1" value="0" oninput="this.nextElementSibling.value = this.value">
+                        <output>0</output>
+                    </div>
+                </div>
+                
+                <div style="float: left; width: 240px;">
+                    <div>
+                        scaleX
+                        <input id="scaleX" type="range" min="0" max="5" step="0.1" value="1" oninput="this.nextElementSibling.value = this.value">
+                        <output>1</output>
+                    </div>
+                    
+                    <div>
+                        scaleY
+                        <input id="scaleY" type="range" min="0" max="5" step="0.1" value="1" oninput="this.nextElementSibling.value = this.value">
+                        <output>1</output>
+                    </div>
+
+                    <div>
+                        scaleZ
+                        <input id="scaleZ" type="range" min="0" max="5" step="0.1" value="1" oninput="this.nextElementSibling.value = this.value">
+                        <output>1</output>
                     </div>
                 </div>
             </div>

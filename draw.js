@@ -7,9 +7,8 @@ var program;
 var points = [];
 var normals = [];
 var colors = [];
-var shapes = [];
+var shape;
 var drawObject = [];
-var selectedObject = [];
 
 var thetaLoc, newPosLoc, scaleLoc;
 
@@ -129,42 +128,14 @@ function main() {
     shininessLoc = gl.getUniformLocation(program, "shininess");
 
     points = []; normals = []; colors = [];
-    colorCube([ 1.0, 0.0, 0.0, 1.0 ]);
-    shapes.push(
-        new Drawable(
-            points,
-            normals,
-            colors,
-            [0.0, 0.0, 0.0],
-            [-2.0, 0.0, 0.0],
-            [1.0, 1.0, 1.0],
-            program
-        )
-    );
-
-    points = []; normals = []; colors = [];
-    colorCone();
-    shapes.push(
+    colorCube([ 1.0, 1.0, 1.0, 1.0 ]);
+    shape = (
         new Drawable(
             points,
             normals,
             colors,
             [0.0, 0.0, 0.0],
             [0.0, 0.0, 0.0],
-            [1.0, 1.0, 1.0],
-            program
-        )
-    );
-
-    points = []; normals = []; colors = [];
-    colorSphere();
-    shapes.push(
-        new Drawable(
-            points,
-            normals,
-            colors,
-            [0.0, 0.0, 0.0],
-            [2.5, 0.0, 0.0],
             [1.0, 1.0, 1.0],
             program
         )
@@ -211,11 +182,6 @@ function main() {
             program
         )
     );
-
-    drawObject = document.querySelectorAll("#in");
-    selectedObject.push(document.getElementById("#transformCube"));
-    selectedObject.push(document.getElementById("#transformCone"));
-    selectedObject.push(document.getElementById("#transformSphere"));
 
     render();
 }
@@ -273,130 +239,6 @@ function quad(a, b, c, d, color) {
     }
 }
 
-function colorCone() {
-    var x, z;
-    const r = 1;
-    const step = radians(20);
-
-    for (var theta = 0; theta < 2 * Math.PI; theta += step) {
-        x = r * Math.cos(theta);
-        z = r * Math.sin(theta);
-        points.push(vec4(x, -0.5, z, 1.0));
-        colors.push([Math.abs(Math.tan(x * z)), Math.abs(z + x), Math.tan(x + z), 1.0]);
-        
-        points.push(vec4(0.0, 1.0, 0.0, 1.0));
-        colors.push([1, 0, 1, 1.0]);
-
-        x = r * Math.cos(theta + step);
-        z = r * Math.sin(theta + step);
-        points.push(vec4(x, -0.5, z, 1.0));
-        colors.push([Math.abs(Math.tan(x * z)), Math.abs(z + x), Math.tan(x + z), 1.0]);
-    }
-    
-    for (var i = 0; i < points.length; i += 3) {
-        var normal = calculateNormal(points[i], points[i + 1], points[i + 2]);
-        normals.push(vec3(normal));
-        normals.push(vec3(normal));
-        normals.push(vec3(normal));
-    }
-}
-
-function colorSphere() {
-    var cX = 0, cY = 0, cZ = 0;
-    const r = 1;
-    var nrOfSegments = 30;
-    var vertices = [];
-
-    vertices.push(vec4(cX, r, cZ, 1.0)); //top vertex;
-    for (var h = 0; h < nrOfSegments - 1; h++) {
-        var phi = (h + 1) * Math.PI / (nrOfSegments);
-
-        for (var v = 0; v < nrOfSegments; v++) {
-            var theta = v * 2 * Math.PI / nrOfSegments;
-
-            var x = r * Math.sin(phi) * Math.cos(theta) + cX;
-            var y = r * Math.cos(phi) + cY;
-            var z = r * Math.sin(phi) * Math.sin(theta) + cZ;
-            vertices.push(vec4(x, y, z, 1.0));
-        }
-    }
-    vertices.push(vec4(cX, -r, cZ, 1.0)); //bottom vertex;
-
-    //
-    // top and bottom of sphere
-    //
-    var color1 = [Math.random(), Math.random(), Math.random(), 1.0];
-    var color2 = [Math.random(), Math.random(), Math.random(), 1.0];
-    for (var i = 0; i < nrOfSegments; i++) {
-        var idx0 = (i + 1) % nrOfSegments + 1;
-        var idx1 = i + 1;
-
-        points.push(vertices[0]);
-        colors.push(color1);
-        points.push(vertices[idx0]);
-        colors.push(color1);
-        points.push(vertices[idx1]);
-        colors.push(color1);
-
-        points.push(vertices[vertices.length - 1]);
-        colors.push(nrOfSegments % 2 ? color1 : color2);
-        points.push(vertices[vertices.length - 1 - idx0]);
-        colors.push(nrOfSegments % 2 ? color1 : color2);
-        points.push(vertices[vertices.length - 1 - idx1]);
-        colors.push(nrOfSegments % 2 ? color1 : color2);
-    }
-    
-    for (var i = 0; i < nrOfSegments - 2; i++) {
-        var idx0 = i * nrOfSegments + 1;
-        var idx1 = (i + 1) * nrOfSegments + 1;
-
-        for (var j = 0; j < nrOfSegments; j++) {
-            var color = vec4(Math.random(), Math.random(), Math.random(), 1.0);
-            points.push(vertices[idx0 + j]);
-            colors.push(i % 2 ? color1 : color2);
-            points.push(vertices[idx0 + (j + 1) % nrOfSegments]);
-            colors.push(i % 2 ? color1 : color2);
-            points.push(vertices[idx1 + (j + 1) % nrOfSegments]);
-            colors.push(i % 2 ? color1 : color2);
-            
-            points.push(vertices[idx0 + j]);
-            colors.push(i % 2 ? color1 : color2);
-            points.push(vertices[idx1 + (j + 1) % nrOfSegments]);
-            colors.push(i % 2 ? color1 : color2);
-            points.push(vertices[idx1 + j]);
-            colors.push(i % 2 ? color1 : color2);
-        }
-    }
-
-    for (var i = 0; i < points.length; i += 3) {
-        var normal = calculateNormal(points[i], points[i + 1], points[i + 2]);
-        normals.push(vec3(normal));
-        normals.push(vec3(normal));
-        normals.push(vec3(normal));
-    }
-}
-
-function updateSliders(obj) {
-    index = obj.value;
-
-    document.getElementById("rotateX").value = shapes[obj.value].rotation[0];
-    document.getElementById("rotateY").value = shapes[obj.value].rotation[1];
-    document.getElementById("rotateZ").value = shapes[obj.value].rotation[2];
-
-    document.getElementById("moveX").value = shapes[obj.value].translation[0];
-    document.getElementById("moveY").value = shapes[obj.value].translation[1];
-    document.getElementById("moveZ").value = shapes[obj.value].translation[2];
-
-    document.getElementById("scaleX").value = shapes[obj.value].scaling[0];
-    document.getElementById("scaleY").value = shapes[obj.value].scaling[1];
-    document.getElementById("scaleZ").value = shapes[obj.value].scaling[2];
-
-    var outputs = document.getElementsByTagName("output");
-    for (var i = 0; i < outputs.length; i++) {
-        outputs[i].value = outputs[i].previousElementSibling.value;
-    }
-}
-
 function updateLightSliders(obj) {
     lightIndex = obj.value;
 
@@ -416,17 +258,17 @@ function updateLightSliders(obj) {
 function render() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    shapes[index].rotation[0] = document.getElementById("rotateX").value;
-    shapes[index].rotation[1] = document.getElementById("rotateY").value;
-    shapes[index].rotation[2] = document.getElementById("rotateZ").value;
+    shape.rotation[0] = document.getElementById("rotateX").value;
+    shape.rotation[1] = document.getElementById("rotateY").value;
+    shape.rotation[2] = document.getElementById("rotateZ").value;
 
-    shapes[index].translation[0] = document.getElementById("moveX").value;
-    shapes[index].translation[1] = document.getElementById("moveY").value;
-    shapes[index].translation[2] = document.getElementById("moveZ").value;
+    shape.translation[0] = document.getElementById("moveX").value;
+    shape.translation[1] = document.getElementById("moveY").value;
+    shape.translation[2] = document.getElementById("moveZ").value;
 
-    shapes[index].scaling[0] = document.getElementById("scaleX").value;
-    shapes[index].scaling[1] = document.getElementById("scaleY").value;
-    shapes[index].scaling[2] = document.getElementById("scaleZ").value;
+    shape.scaling[0] = document.getElementById("scaleX").value;
+    shape.scaling[1] = document.getElementById("scaleY").value;
+    shape.scaling[2] = document.getElementById("scaleZ").value;
 
     radius = document.getElementById("radius").value;
     camPhi = document.getElementById("camPhi").value;
@@ -475,15 +317,8 @@ function render() {
     gl.uniform4fv(ambientColorLoc, flatten(ambientColor));
     gl.uniform1f(shininessLoc, shininess);
 
-
-    lights[2].color = lights[2].color.map(x => [1.0, 1.0, 1.0, 1.0]);
-
-    for (var i = 0; i < shapes.length; i++) {
-        if (drawObject[i].checked) {
-            shapes[i].draw();
-        }
-        lights[i].draw();
-    }
+    shape.draw();
+    lights.forEach(light => light.draw());
 
     requestAnimFrame(render);
 }
