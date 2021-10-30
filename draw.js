@@ -8,7 +8,6 @@ var points = [];
 var normals = [];
 var colors = [];
 var shape;
-var drawObject = [];
 
 var thetaLoc, newPosLoc, scaleLoc;
 
@@ -34,8 +33,7 @@ var specularProductLoc1, specularProductLoc2, specularProductLoc3;
 var ambientColorLoc, ambientColor = vec4(0.05, 0.05, 0.05, 1.0);
 var shininessLoc, shininess;
 
-var index = 0,
-    lightIndex = 0;
+var lightIndex = 0;
 
 class Drawable {
     constructor(vertices, normals, color, rotation, translation, scaling, program) {
@@ -127,21 +125,14 @@ function main() {
     ambientColorLoc = gl.getUniformLocation(program, "ambientProduct");
     shininessLoc = gl.getUniformLocation(program, "shininess");
 
-    points = []; normals = []; colors = [];
-    colorCube([ 1.0, 1.0, 1.0, 1.0 ]);
-    shape = (
-        new Drawable(
-            points,
-            normals,
-            colors,
-            [0.0, 0.0, 0.0],
-            [0.0, 0.0, 0.0],
-            [1.0, 1.0, 1.0],
-            program
-        )
-    );
+    document.querySelector('#object-input').addEventListener('change', function() {
+        if (!this.files.length) {
+            console.log('no file selected');
+            return;
+        }
+        readTextFromFile(this.files[0]);
+    });
 
-    points = []; normals = []; colors = [];
     colorCube([1.0, 0.0, 0.0, 1.0]);
     lights.push(
         new Drawable(
@@ -155,7 +146,6 @@ function main() {
         )
     );
 
-    points = []; normals = []; colors = [];
     colorCube([0.0, 1.0, 0.0, 1.0]);
     lights.push(
         new Drawable(
@@ -169,7 +159,6 @@ function main() {
         )
     );
 
-    points = []; normals = []; colors = [];
     colorCube([0.0, 0.0, 1.0, 1.0]);
     lights.push(
         new Drawable(
@@ -186,16 +175,8 @@ function main() {
     render();
 }
 
-function calculateNormal(a, b, c) {
-    var t1 = subtract(b, a);
-	var t2 = subtract(c, a);
-	var normal = normalize(cross(t1, t2));
-
-    normal = vec4(normal);
-	return normal;
-}
-
 function colorCube(color) {
+    points = []; normals = []; colors = [];
     quad( 1, 0, 3, 2, color );
     quad( 2, 3, 7, 6, color );
     quad( 3, 0, 4, 7, color );
@@ -255,20 +236,99 @@ function updateLightSliders(obj) {
     }
 }
 
+function readTextFromFile(file) {
+    points = []; normals = []; colors = [];
+    var reader = new FileReader();	
+
+    reader.addEventListener('load', function(e) {
+        var text = e.target.result;
+        var lines = text.split(/\r?\n/);
+        
+        var vertices = [vec4(0.0, 0.0, 0.0, 0.0)];
+        var texture = [vec2(0.0, 0.0)];
+        var normal = [vec3(0.0, 0.0, 0.0)];
+
+        function addVertex(v) {
+            var pnts = v.split('/');
+            points.push(vertices[pnts[0]]);
+            normals.push(normal[pnts[2]]);
+            colors.push(vec4(1.0, 1.0, 1.0, 1.0));
+        }
+
+        var keywords = {
+            v(parts) {
+                vertices.push(vec4(parts.map(parseFloat), 1.0));
+            },
+            vn(parts) {
+                normal.push(vec3(parts.map(parseFloat)));
+            },
+            vt(parts) {
+                texture.push(vec2(parts.map(parseFloat)));
+            },
+            f(parts) {
+                addVertex(parts[0]);
+                addVertex(parts[1]);
+                addVertex(parts[2]);
+            }
+        };
+
+        lines.forEach(line => {
+            line = line.trim();
+            if (line === '' || line.startsWith('#')) {
+                return;
+            }
+            
+            var keyword = line.split(/\s+/)[0];
+            var parts = line.split(/\s+/).slice(1);
+            if (!keywords[keyword]) {
+                return;
+            }
+            keywords[keyword](parts);
+        });
+        
+        shape = (
+            new Drawable(
+                points,
+                normals,
+                colors,
+                [0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0],
+                [1.0, 1.0, 1.0],
+                program,
+            )
+        );
+    });
+
+    reader.addEventListener('error', function() {
+        alert('File error happened!');
+    });
+    
+    reader.readAsText(file);
+}
+
 function render() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    shape.rotation[0] = document.getElementById("rotateX").value;
-    shape.rotation[1] = document.getElementById("rotateY").value;
-    shape.rotation[2] = document.getElementById("rotateZ").value;
+    if (shape) {
+        shape.rotation[0] = document.getElementById("rotateX").value;
+        if (document.getElementById("toggleRotation").checked) {
+            shape.rotation[1] += 1;
+            shape.rotation[1] %= 360;
+        } else {
+            shape.rotation[1] = document.getElementById("rotateY").value;
+        }
+        shape.rotation[2] = document.getElementById("rotateZ").value;
 
-    shape.translation[0] = document.getElementById("moveX").value;
-    shape.translation[1] = document.getElementById("moveY").value;
-    shape.translation[2] = document.getElementById("moveZ").value;
+        shape.translation[0] = document.getElementById("moveX").value;
+        shape.translation[1] = document.getElementById("moveY").value;
+        shape.translation[2] = document.getElementById("moveZ").value;
 
-    shape.scaling[0] = document.getElementById("scaleX").value;
-    shape.scaling[1] = document.getElementById("scaleY").value;
-    shape.scaling[2] = document.getElementById("scaleZ").value;
+        shape.scaling[0] = document.getElementById("scaleX").value;
+        shape.scaling[1] = document.getElementById("scaleY").value;
+        shape.scaling[2] = document.getElementById("scaleZ").value;
+
+        shape.draw();
+    }
 
     radius = document.getElementById("radius").value;
     camPhi = document.getElementById("camPhi").value;
@@ -317,7 +377,6 @@ function render() {
     gl.uniform4fv(ambientColorLoc, flatten(ambientColor));
     gl.uniform1f(shininessLoc, shininess);
 
-    shape.draw();
     lights.forEach(light => light.draw());
 
     requestAnimFrame(render);
