@@ -7,7 +7,9 @@
             attribute vec4 vPosition;
             attribute vec4 vNormal;
             attribute vec4 vColor;
+            attribute vec2 vTextureCoord;
             varying vec4 fColor;
+            varying vec2 fTextureCoord;
 
             uniform vec4 lightPosition1;
             uniform vec4 diffuseProduct1;
@@ -92,6 +94,8 @@
                 vec4 diffuse = diffuseProduct1 * diffuseValue1 + diffuseProduct2 * diffuseValue2 + diffuseProduct3 * diffuseValue3;
                 vec4 specular = specularProduct1 * specularValue1 + specularProduct2 * specularValue2 + specularProduct3 * specularValue3;
                 fColor = vColor * (diffuse + specular + ambientProduct);
+
+                fTextureCoord = vTextureCoord;
             }
         </script>
 
@@ -99,8 +103,12 @@
             precision mediump float;
             varying vec4 fColor;
 
+            uniform sampler2D textureData;
+            varying vec2 fTextureCoord;
+
             void main() {
-                gl_FragColor = fColor;
+                vec4 colorFromTexture = texture2D(textureData, fTextureCoord);
+                gl_FragColor = colorFromTexture * 0.8 + fColor * 0.2;
             }
         </script>
 
@@ -167,7 +175,7 @@
     
                     <div style="padding-top: 5px; padding-bottom: 5px;">
                         Choose texture to load:
-                        <input type="file" id="texture-input" accept="image/png, image/jpeg">
+                        <input type="file" id="texture-input" accept="image/*">
                     </div>
                 </div>
                 

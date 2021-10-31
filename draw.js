@@ -5,6 +5,7 @@ var gl;
 var program;
 
 var points = [];
+var textureCoords = [];
 var normals = [];
 var colors = [];
 var shape;
@@ -36,7 +37,7 @@ var shininessLoc, shininess;
 var lightIndex = 0;
 
 class Drawable {
-    constructor(vertices, normals, color, rotation, translation, scaling, program) {
+    constructor(vertices, normals, color, textureID, rotation, translation, scaling, program) {
         this.rotation = rotation;
         this.translation = translation;
         this.scaling = scaling;
@@ -45,6 +46,7 @@ class Drawable {
         this.vertices = vertices;
         this.normals = normals
         this.color = color;
+        this.textureID = textureID;
 
         this.vBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
@@ -60,12 +62,18 @@ class Drawable {
         gl.bindBuffer(gl.ARRAY_BUFFER, this.cBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(this.color), gl.STATIC_DRAW);
         this.cAttributeLocation = gl.getAttribLocation(program, 'vColor');
+
+        this.tBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.tBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(textureCoords), gl.STATIC_DRAW);
+        this.tAttributeLocation = gl.getAttribLocation(program, 'vTextureCoord');
     }
 
     draw() {
         gl.uniform3fv(thetaLoc, this.rotation);
         gl.uniform3fv(newPosLoc, this.translation);
         gl.uniform3fv(scaleLoc, this.scaling);
+        gl.uniform1i(gl.getUniformLocation(program, 'textureData'), this.textureID);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
         gl.vertexAttribPointer(this.vAttributeLocation, 4, gl.FLOAT, false, 0, 0);
@@ -78,6 +86,10 @@ class Drawable {
         gl.bindBuffer(gl.ARRAY_BUFFER, this.cBuffer);
         gl.vertexAttribPointer(this.cAttributeLocation, 4, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.cAttributeLocation);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.tBuffer);
+        gl.vertexAttribPointer(this.tAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(this.tAttributeLocation);
 
         gl.drawArrays(gl.TRIANGLES, 0, this.vertices.length);
     }
@@ -133,12 +145,21 @@ function main() {
         readTextFromFile(this.files[0]);
     });
 
+    document.querySelector('#texture-input').addEventListener('change', function() {
+		if(!this.files.length) {
+			console.log('no file selected');
+			return;
+		}
+		readImageFromFile(this.files[0]);
+	});
+
     colorCube([1.0, 0.0, 0.0, 1.0]);
     lights.push(
         new Drawable(
             points,
             normals,
             colors,
+            1,
             [0.0, 0.0, 0.0],
             vec3(lightPosition1),
             [0.2, 0.2, 0.2],
@@ -152,6 +173,7 @@ function main() {
             points,
             normals,
             colors,
+            1,
             [0.0, 0.0, 0.0],
             vec3(lightPosition2),
             [0.2, 0.2, 0.2],
@@ -165,6 +187,7 @@ function main() {
             points,
             normals,
             colors,
+            1,
             [0.0, 0.0, 0.0],
             vec3(lightPosition3),
             [0.2, 0.2, 0.2],
@@ -177,6 +200,7 @@ function main() {
 
 function colorCube(color) {
     points = []; normals = []; colors = [];
+    textureCoords = [[1, 0], [0, 0], [0, 1], [0, 1], [1, 1], [1, 0], [1, 1], [1, 0], [0, 0], [0, 0], [0, 1], [1, 1], [1, 1], [1, 0], [0, 0], [0, 0], [0, 1], [1, 1], [1, 1], [1, 0], [0, 0], [0, 0], [0, 1], [1, 1], [1, 1], [1, 0], [0, 0], [0, 0], [0, 1], [1, 1], [1, 1], [1, 0], [0, 0], [0, 0], [0, 1], [1, 1]];
     quad( 1, 0, 3, 2, color );
     quad( 2, 3, 7, 6, color );
     quad( 3, 0, 4, 7, color );
@@ -195,17 +219,6 @@ function quad(a, b, c, d, color) {
         vec4(-0.5,  0.5, -0.5, 1.0 ),
         vec4( 0.5,  0.5, -0.5, 1.0 ),
         vec4( 0.5, -0.5, -0.5, 1.0 )
-    ];
-
-    var vertexColors = [
-        [ 0.0, 0.0, 0.0, 1.0 ],  // black
-        [ 1.0, 0.0, 0.0, 1.0 ],  // red
-        [ 1.0, 1.0, 0.0, 1.0 ],  // yellow
-        [ 0.0, 1.0, 0.0, 1.0 ],  // green
-        [ 0.0, 0.0, 1.0, 1.0 ],  // blue
-        [ 1.0, 0.0, 1.0, 1.0 ],  // magenta
-        [ 0.0, 1.0, 1.0, 1.0 ],  // cyan
-        [ 1.0, 1.0, 1.0, 1.0 ]   // white
     ];
 
     var t1 = subtract(vertices[a], vertices[b]);
@@ -237,7 +250,8 @@ function updateLightSliders(obj) {
 }
 
 function readTextFromFile(file) {
-    points = []; normals = []; colors = [];
+    points = []; normals = []; colors = []; textureCoords = [];
+    shape = null;
     var reader = new FileReader();	
 
     reader.addEventListener('load', function(e) {
@@ -251,6 +265,7 @@ function readTextFromFile(file) {
         function addVertex(v) {
             var pnts = v.split('/');
             points.push(vertices[pnts[0]]);
+            textureCoords.push(texture[pnts[1]] || vec2(0.0, -.0));
             normals.push(normal[pnts[2]]);
             colors.push(vec4(1.0, 1.0, 1.0, 1.0));
         }
@@ -264,6 +279,7 @@ function readTextFromFile(file) {
             },
             vt(parts) {
                 texture.push(vec2(parts.map(parseFloat)));
+                texture[texture.length - 1][1] = 1 -  texture[texture.length - 1][1];
             },
             f(parts) {
                 addVertex(parts[0]);
@@ -291,6 +307,7 @@ function readTextFromFile(file) {
                 points,
                 normals,
                 colors,
+                0,
                 [0.0, 0.0, 0.0],
                 [0.0, 0.0, 0.0],
                 [1.0, 1.0, 1.0],
@@ -302,8 +319,36 @@ function readTextFromFile(file) {
     reader.addEventListener('error', function() {
         alert('File error happened!');
     });
-    
+
     reader.readAsText(file);
+}
+
+function readImageFromFile(file) {
+    var reader = new FileReader();
+    reader.addEventListener('load', function(e) {
+        var dataRaw = e.target.result;
+
+        gl.activeTexture(gl.TEXTURE0);
+        const texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+
+        const image = new Image();
+        image.onload = function() {
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        };
+
+        image.src = dataRaw;
+    });
+
+    reader.addEventListener('error', function() {
+        alert('File error happened!');
+    });
+
+    reader.readAsDataURL(file);
 }
 
 function render() {
