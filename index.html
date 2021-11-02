@@ -177,10 +177,14 @@
                         Choose texture to load:
                         <input type="file" id="texture-input" accept="image/*">
                     </div>
+                    <button id="loadOBJ">Load OBJ</button>
                 </div>
                 
                 <div>
-                    <input id="toggleRotation" type="checkbox" checked> Rotation
+                    <label for="objects">Choose model to edit:</label>
+                    <select name="objects" id="objects" onchange="updateSliders(this)">
+                        <option disabled selected value>Load a model</option>
+                    </select>
                 </div>
 
                 <div style="float: left; width: 240px;">

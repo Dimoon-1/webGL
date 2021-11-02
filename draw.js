@@ -8,7 +8,7 @@ var points = [];
 var textureCoords = [];
 var normals = [];
 var colors = [];
-var shape;
+var shapes = [];
 
 var thetaLoc, newPosLoc, scaleLoc;
 
@@ -34,10 +34,10 @@ var specularProductLoc1, specularProductLoc2, specularProductLoc3;
 var ambientColorLoc, ambientColor = vec4(0.05, 0.05, 0.05, 1.0);
 var shininessLoc, shininess;
 
-var lightIndex = 0;
+var lightIndex = 0, activeTexture = 0;
 
 class Drawable {
-    constructor(vertices, normals, color, textureID, rotation, translation, scaling, program) {
+    constructor(vertices, normals, color, texture, textureID, rotation, translation, scaling, program) {
         this.rotation = rotation;
         this.translation = translation;
         this.scaling = scaling;
@@ -46,6 +46,7 @@ class Drawable {
         this.vertices = vertices;
         this.normals = normals
         this.color = color;
+        this.texture = texture;
         this.textureID = textureID;
 
         this.vBuffer = gl.createBuffer();
@@ -65,7 +66,7 @@ class Drawable {
 
         this.tBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.tBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(textureCoords), gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(this.texture), gl.STATIC_DRAW);
         this.tAttributeLocation = gl.getAttribLocation(program, 'vTextureCoord');
     }
 
@@ -137,21 +138,32 @@ function main() {
     ambientColorLoc = gl.getUniformLocation(program, "ambientProduct");
     shininessLoc = gl.getUniformLocation(program, "shininess");
 
-    document.querySelector('#object-input').addEventListener('change', function() {
-        if (!this.files.length) {
-            console.log('no file selected');
+    document.getElementById("loadOBJ").addEventListener("click", function() {
+        if (!document.querySelector('#object-input').files.length) {
+            console.log("Error: no file selected!");
             return;
         }
-        readTextFromFile(this.files[0]);
-    });
+        else {
+            activeTexture++;
+            readTextFromFile(document.querySelector('#object-input').files[0]);
+        }
 
-    document.querySelector('#texture-input').addEventListener('change', function() {
-		if(!this.files.length) {
-			console.log('no file selected');
-			return;
-		}
-		readImageFromFile(this.files[0]);
-	});
+        if (!document.querySelector('#texture-input').files.length) {
+            console.log("OBJ will load without texture");
+        }
+        else {
+            readImageFromFile(document.querySelector('#texture-input').files[0]);
+        }
+
+        var uploadedOBJ = document.createElement("option");
+        uploadedOBJ.value = activeTexture;
+        uploadedOBJ.innerHTML = document.querySelector('#object-input').files[0].name;
+        document.getElementById("objects").appendChild(uploadedOBJ);
+
+        document.getElementById("object-input").value = "";
+        document.getElementById("texture-input").value = "";
+        console.log("Object loaded");
+    });
 
     colorCube([1.0, 0.0, 0.0, 1.0]);
     lights.push(
@@ -159,7 +171,8 @@ function main() {
             points,
             normals,
             colors,
-            1,
+            textureCoords,
+            activeTexture,
             [0.0, 0.0, 0.0],
             vec3(lightPosition1),
             [0.2, 0.2, 0.2],
@@ -173,7 +186,8 @@ function main() {
             points,
             normals,
             colors,
-            1,
+            textureCoords,
+            activeTexture,
             [0.0, 0.0, 0.0],
             vec3(lightPosition2),
             [0.2, 0.2, 0.2],
@@ -187,7 +201,8 @@ function main() {
             points,
             normals,
             colors,
-            1,
+            textureCoords,
+            activeTexture,
             [0.0, 0.0, 0.0],
             vec3(lightPosition3),
             [0.2, 0.2, 0.2],
@@ -233,6 +248,27 @@ function quad(a, b, c, d, color) {
     }
 }
 
+function updateSliders(obj) {
+    // index = obj.value;
+
+    document.getElementById("rotateX").value = shapes[obj.value - 1].rotation[0];
+    document.getElementById("rotateY").value = shapes[obj.value - 1].rotation[1];
+    document.getElementById("rotateZ").value = shapes[obj.value - 1].rotation[2];
+
+    document.getElementById("moveX").value = shapes[obj.value - 1].translation[0];
+    document.getElementById("moveY").value = shapes[obj.value - 1].translation[1];
+    document.getElementById("moveZ").value = shapes[obj.value - 1].translation[2];
+
+    document.getElementById("scaleX").value = shapes[obj.value - 1].scaling[0];
+    document.getElementById("scaleY").value = shapes[obj.value - 1].scaling[1];
+    document.getElementById("scaleZ").value = shapes[obj.value - 1].scaling[2];
+
+    var outputs = document.getElementsByTagName("output");
+    for (var i = 0; i < outputs.length; i++) {
+        outputs[i].value = outputs[i].previousElementSibling.value;
+    }
+}
+
 function updateLightSliders(obj) {
     lightIndex = obj.value;
 
@@ -251,7 +287,6 @@ function updateLightSliders(obj) {
 
 function readTextFromFile(file) {
     points = []; normals = []; colors = []; textureCoords = [];
-    shape = null;
     var reader = new FileReader();	
 
     reader.addEventListener('load', function(e) {
@@ -302,16 +337,18 @@ function readTextFromFile(file) {
             keywords[keyword](parts);
         });
         
-        shape = (
+        var textureID = activeTexture;
+        shapes.push(
             new Drawable(
                 points,
                 normals,
                 colors,
-                0,
+                textureCoords,
+                textureID,
                 [0.0, 0.0, 0.0],
                 [0.0, 0.0, 0.0],
                 [1.0, 1.0, 1.0],
-                program,
+                program
             )
         );
     });
@@ -328,7 +365,8 @@ function readImageFromFile(file) {
     reader.addEventListener('load', function(e) {
         var dataRaw = e.target.result;
 
-        gl.activeTexture(gl.TEXTURE0);
+        gl.activeTexture(gl.TEXTURE0 + activeTexture);
+        console.log(gl.TEXTURE0 + activeTexture);
         const texture = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_2D, texture);
 
@@ -354,25 +392,20 @@ function readImageFromFile(file) {
 function render() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    if (shape) {
-        shape.rotation[0] = document.getElementById("rotateX").value;
-        if (document.getElementById("toggleRotation").checked) {
-            shape.rotation[1] += 1;
-            shape.rotation[1] %= 360;
-        } else {
-            shape.rotation[1] = document.getElementById("rotateY").value;
-        }
-        shape.rotation[2] = document.getElementById("rotateZ").value;
+    var idx = parseInt(document.getElementById("objects").value);
+    if (idx) {
+        idx--;
+        shapes[idx].rotation[0] = document.getElementById("rotateX").value;
+        shapes[idx].rotation[1] = document.getElementById("rotateY").value;
+        shapes[idx].rotation[2] = document.getElementById("rotateZ").value;
 
-        shape.translation[0] = document.getElementById("moveX").value;
-        shape.translation[1] = document.getElementById("moveY").value;
-        shape.translation[2] = document.getElementById("moveZ").value;
+        shapes[idx].translation[0] = document.getElementById("moveX").value;
+        shapes[idx].translation[1] = document.getElementById("moveY").value;
+        shapes[idx].translation[2] = document.getElementById("moveZ").value;
 
-        shape.scaling[0] = document.getElementById("scaleX").value;
-        shape.scaling[1] = document.getElementById("scaleY").value;
-        shape.scaling[2] = document.getElementById("scaleZ").value;
-
-        shape.draw();
+        shapes[idx].scaling[0] = document.getElementById("scaleX").value;
+        shapes[idx].scaling[1] = document.getElementById("scaleY").value;
+        shapes[idx].scaling[2] = document.getElementById("scaleZ").value;
     }
 
     radius = document.getElementById("radius").value;
@@ -423,6 +456,7 @@ function render() {
     gl.uniform1f(shininessLoc, shininess);
 
     lights.forEach(light => light.draw());
+    shapes.forEach(shape => shape.draw());
 
     requestAnimFrame(render);
 }
